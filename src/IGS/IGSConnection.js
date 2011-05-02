@@ -16,12 +16,15 @@ var IGSConnection = function IGSConnection() {
     
     var self = this;
     
+    // IGS Storage object
     this.IGSStatus = {
         LiveGames: {},
         ConnectedPlayers: [],
-        ObservingGames: {}
+        ObservingGames: {},
+        FinishedGames: []
     };
 	
+    // Initialize Parse and bind to events
     this.parser = new IGSParser;
     this.parser
         .on('login', function() {
@@ -32,8 +35,10 @@ var IGSConnection = function IGSConnection() {
         .on('gameInfoStart', this._onGameInfoStart.bind(self))
         .on('liveGameEntry', this._onLiveGameEntry.bind(self))
         .on('gameMoveHeader', this._onGameMoveHeader.bind(self))
-        .on('gameMove', this._onGameMove.bind(self));
+        .on('gameMove', this._onGameMove.bind(self))
+        .on('gameEnd', this._onGameEnd.bind(self));
     
+    // Initialize Socket and bind to events
     this.socket = new net.Socket();
     this.socket.setEncoding('ascii');
     this.socket
@@ -110,11 +115,28 @@ IGSConnection.prototype.observeGame = function(gameId) {
 	IGSConnection.prototype._onGameMove = function(move) {
 		console.log('Move', move);
 		
-		if (typeof(this.IGSStatus.ObservingGames[move.header.gameId]) === 'undefined') {
-			this.IGSStatus.ObservingGames[move.header.gameId] = new IGSGame;
+		var game = this.IGSStatus.ObservingGames[move.header.gameId];
+		
+		if (typeof(game) === 'undefined') {
+			game = this.IGSStatus.ObservingGames[move.header.gameId] = new IGSGame;
 		}
 		
-		this.IGSStatus.ObservingGames[move.header.gameId].addMove(move);
+		game.addMove(move);
+		
+		this.emit('gameMove', move);
+	};
+	
+	IGSConnection.prototype._onGameEnd = function(gameEnd) {
+		
+		var finishedGame = this.IGSStatus.ObservingGames[gameEnd.gameId];
+		
+		finishedGame.setResult(gameEnd.result);
+		
+		this.IGSStatus.FinishedGames.push(finishedGame);
+		delete this.IGSStatus.ObservingGames[gameEnd.gameId];
+		
+		console.log('Game ended.', finishedGame);
+		this.emit('gameEnd', finishedGame);
 	};
 	
 exports = module.exports = IGSConnection;

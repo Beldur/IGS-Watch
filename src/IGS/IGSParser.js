@@ -25,7 +25,8 @@ var IGSREGEX_LINE = new RegExp("^.*\r$", "m"),
         [IGSREGEX_GAMEINFO, '_parseGameInfo'],
         [IGSREGEX_GAMEMOVEHEADER, '_parseGameMoveHeader'],
         [IGSREGEX_GAMEMOVE_PROPS, '_parseGameMoveProps'],
-        [IGSREGEX_GAMEMOVE, '_parseGameMove']
+        [IGSREGEX_GAMEMOVE, '_parseGameMove'],
+        [IGSREGEX_GAMEEND, '_parseGameEnd']
     ];
 
 var IGSParser = exports = module.exports = function IGSParser() {
@@ -103,97 +104,111 @@ IGSParser.prototype._parseLine = function(line) {
 
 /* Line Parsers */
 		
-IGSParser.prototype._parseLoginMessage = function(match) {
-    this.emit('loggedIn');
-    
-    return true;
-};
-
-IGSParser.prototype._parseGameInfoStart = function(match) {
-    this.emit('gameInfoStart');
-    
-    return true;
-};
-
-/**
- * Game Info comes from listing all games
- */
-IGSParser.prototype._parseGameInfo = function(match) {
-    var game = {
-        id: parseInt(match[1], 10),
-        whiteName: match[2],
-        whiteRank: match[3].trim(),
-        blackName: match[4],
-        blackRank: match[5].trim(),
-        move: parseInt(match[6], 10),
-        size: parseInt(match[7], 10),
-        handicap: parseInt(match[8], 10),
-        komi: parseFloat(match[9]),
-        byoyomi: parseInt(match[10], 10),
-        gameType: match[11],
-        observer: parseInt(match[12].trim(), 10)
-    };
-    
-    this.emit('liveGameEntry', game);
-	
-    return true;
-};
-
-/**
- * When getting moves from a game we get a move header
- */
-IGSParser.prototype._parseGameMoveHeader = function(match) {
-	var moveHeader = {
-	    gameId: parseInt(match[1], 10),
-	    whiteName: match[2],
-	    whiteCaptures: parseInt(match[3], 10),
-	    whiteTimeLeft: parseInt(match[4], 10),
-	    whiteMovesLeft: match[5],
-	    blackName: match[6],
-	    blackCaptures: parseInt(match[7], 10),
-	    blackTimeLeft: parseInt(match[8], 10),
-	    blackMovesLeft: match[9]
+	IGSParser.prototype._parseLoginMessage = function(match) {
+	    this.emit('loggedIn');
+	    
+	    return true;
 	};
 	
-	this.moveCache.latestHeader = moveHeader;
-	
-	this.emit('gameMoveHeader', moveHeader);
-	
-	return true;
-};
-
-/**
- * When getting moves from a game we sometimes get Game Props
- */
-IGSParser.prototype._parseGameMoveProps = function(match) {
-	var gameProps = {
-	    gameId: parseInt(match[1], 10),
-	    boardSize: parseInt(match[2], 10),
-	    handicap: parseInt(match[3], 10),
-	    komi: parseFloat(match[4])
+	IGSParser.prototype._parseGameInfoStart = function(match) {
+	    this.emit('gameInfoStart');
+	    
+	    return true;
 	};
 	
-	this.moveCache.latestGameProps = gameProps;
-	
-	this.emit('gameMoveGameProps', gameProps);
-	
-	return true;
-};
-
-/**
- * Parse the move and add latest Move Header and Game Props
- */
-IGSParser.prototype._parseGameMove = function(match) {
-	var move = {
-	    header: this.moveCache.latestHeader,
-	    gameProps: this.moveCache.latestGameProps,
-	    number: parseInt(match[1], 10),
-	    color: match[2],
-	    position: match[3],
-	    captures: (match[4] && match[4].trim().split(' ')) || []
+	/**
+	 * Game Info comes from listing all games
+	 */
+	IGSParser.prototype._parseGameInfo = function(match) {
+	    var game = {
+	        id: parseInt(match[1], 10),
+	        whiteName: match[2],
+	        whiteRank: match[3].trim(),
+	        blackName: match[4],
+	        blackRank: match[5].trim(),
+	        move: parseInt(match[6], 10),
+	        size: parseInt(match[7], 10),
+	        handicap: parseInt(match[8], 10),
+	        komi: parseFloat(match[9]),
+	        byoyomi: parseInt(match[10], 10),
+	        gameType: match[11],
+	        observer: parseInt(match[12].trim(), 10)
+	    };
+	    
+	    this.emit('liveGameEntry', game);
+		
+	    return true;
 	};
 	
-    this.emit('gameMove', move);
-    
-    return true;
-};
+	/**
+	 * When getting moves from a game we get a move header
+	 */
+	IGSParser.prototype._parseGameMoveHeader = function(match) {
+		var moveHeader = {
+		    gameId: parseInt(match[1], 10),
+		    whiteName: match[2],
+		    whiteCaptures: parseInt(match[3], 10),
+		    whiteTimeLeft: parseInt(match[4], 10),
+		    whiteMovesLeft: match[5],
+		    blackName: match[6],
+		    blackCaptures: parseInt(match[7], 10),
+		    blackTimeLeft: parseInt(match[8], 10),
+		    blackMovesLeft: match[9]
+		};
+		
+		this.moveCache.latestHeader = moveHeader;
+		
+		this.emit('gameMoveHeader', moveHeader);
+		
+		return true;
+	};
+	
+	/**
+	 * When getting moves from a game we sometimes get Game Props
+	 */
+	IGSParser.prototype._parseGameMoveProps = function(match) {
+		var gameProps = {
+		    gameId: parseInt(match[1], 10),
+		    boardSize: parseInt(match[2], 10),
+		    handicap: parseInt(match[3], 10),
+		    komi: parseFloat(match[4])
+		};
+		
+		this.moveCache.latestGameProps = gameProps;
+		
+		this.emit('gameMoveGameProps', gameProps);
+		
+		return true;
+	};
+	
+	/**
+	 * Parse the move and add latest Move Header and Game Props
+	 */
+	IGSParser.prototype._parseGameMove = function(match) {
+		var move = {
+		    header: this.moveCache.latestHeader,
+		    gameProps: this.moveCache.latestGameProps,
+		    number: parseInt(match[1], 10),
+		    color: match[2],
+		    position: match[3],
+		    captures: (match[4] && match[4].trim().split(' ')) || []
+		};
+		
+	    this.emit('gameMove', move);
+	    
+	    return true;
+	};
+	
+	/**
+	 * Parse Game End command
+	 */
+	IGSParser.prototype._parseGameEnd = function(match) {
+	    var gameEnd = {
+	        gameId: parseInt(match[1], 10),
+	        result: match[2]
+	    };
+	    
+	    this.emit('gameEnd', gameEnd);
+	    
+	    return true;
+	};

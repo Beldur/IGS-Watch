@@ -13,7 +13,7 @@ igsConnection
 		igsConnection.sendCommand('game');
 		
 		setTimeout(function() {
-			var gameId = igsConnection.LiveGames[40].id;
+			var gameId = igsConnection.LiveGames[7].id;
 			igsConnection.observeGame(gameId);
 		}, 5000);
 		
