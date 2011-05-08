@@ -11,7 +11,7 @@ var IGSConnection = function IGSConnection() {
     if ((this instanceof IGSConnection) === false) {
         return new IGSConnection;
     }
-	
+    
     events.EventEmitter.call(this);
     
     var self = this;
@@ -23,13 +23,13 @@ var IGSConnection = function IGSConnection() {
         ObservingGames: {},
         FinishedGames: []
     };
-	
+    
     // Initialize Parse and bind to events
     this.parser = new IGSParser;
     this.parser
         .on('login', function() {
-        	// We need to login
-        	self.sendCommand('guest');
+            // We need to login
+            self.sendCommand('guest');
         })
         .on('loggedIn', this._onLoggedIn.bind(self))
         .on('gameInfoStart', this._onGameInfoStart.bind(self))
@@ -47,15 +47,15 @@ var IGSConnection = function IGSConnection() {
         .on('close', this._onClose.bind(self));
     
     // Define property LiveGames
-	Object.defineProperty(this, 'LiveGames', {
-		get: function() { return this.IGSStatus.LiveGames; }
-	});
-	
+    Object.defineProperty(this, 'LiveGames', {
+        get: function() { return this.IGSStatus.LiveGames; }
+    });
+    
 };
 sys.inherits(IGSConnection, events.EventEmitter);
 
 IGSConnection.prototype.sendCommand = function(command) {
-	this.socket.write(command + '\n');
+    this.socket.write(command + '\n');
 };
 
 IGSConnection.prototype.connect = function(host, port) {
@@ -63,10 +63,14 @@ IGSConnection.prototype.connect = function(host, port) {
 };
 
 IGSConnection.prototype.observeGame = function(gameId) {
-	this.sendCommand('status ' + gameId);
-	this.sendCommand('moves ' + gameId);
-	this.sendCommand('observe ' + gameId);
+    this.sendCommand('status ' + gameId);
+    this.sendCommand('moves ' + gameId);
+    this.sendCommand('observe ' + gameId);
 };
+
+IGSConnection.prototype.refreshLiveGames = function() {
+	this.sendCommand('game');
+}
 
 /* Socket events */
     IGSConnection.prototype._onConnected = function() {
@@ -79,64 +83,64 @@ IGSConnection.prototype.observeGame = function(gameId) {
     
     IGSConnection.prototype._onData = function(stream) {
         var data = stream.toString('ascii');
-	    
-	    this.parser.addInput(data);
-	};
+        
+        this.parser.addInput(data);
+    };
 
 
 /* IGS events */
-	/**
-	 * Handle logged in event
-	 */
-	IGSConnection.prototype._onLoggedIn = function() {
-		this.sendCommand('toggle client true');
-		
-		//this.sendCommand('toggle quiet false'); // Informs me with connects/disconnects/gameresults/new games happening on the server
-		this.sendCommand('toggle nmatch true');
-		this.sendCommand('toggle newrating true');
-		this.sendCommand('toogle looking off');
-		
-		//toggle seek true
-		//toggle open off
-		
-		this.emit('loggedIn');
-	};
-	
-	IGSConnection.prototype._onGameInfoStart = function() {
-	    this.IGSStatus.LiveGames = [];
-	};
-	
-	IGSConnection.prototype._onLiveGameEntry = function(game) {
-	    this.IGSStatus.LiveGames[game.id] = game;
-	};
-	
-	IGSConnection.prototype._onGameMoveHeader = function(moveHeader) { };
-	
-	IGSConnection.prototype._onGameMove = function(move) {
-		console.log('Move', move);
-		
-		var game = this.IGSStatus.ObservingGames[move.header.gameId];
-		
-		if (typeof(game) === 'undefined') {
-			game = this.IGSStatus.ObservingGames[move.header.gameId] = new IGSGame;
-		}
-		
-		game.addMove(move);
-		
-		this.emit('gameMove', move);
-	};
-	
-	IGSConnection.prototype._onGameEnd = function(gameEnd) {
-		
-		var finishedGame = this.IGSStatus.ObservingGames[gameEnd.gameId];
-		
-		finishedGame.setResult(gameEnd.result);
-		
-		this.IGSStatus.FinishedGames.push(finishedGame);
-		delete this.IGSStatus.ObservingGames[gameEnd.gameId];
-		
-		console.log('Game ended.', finishedGame);
-		this.emit('gameEnd', finishedGame);
-	};
-	
+    /**
+     * Handle logged in event
+     */
+    IGSConnection.prototype._onLoggedIn = function() {
+        this.sendCommand('toggle client true');
+        
+        //this.sendCommand('toggle quiet false'); // Informs me with connects/disconnects/gameresults/new games happening on the server
+        this.sendCommand('toggle nmatch true');
+        this.sendCommand('toggle newrating true');
+        this.sendCommand('toogle looking off');
+        
+        //toggle seek true
+        //toggle open off
+        
+        this.emit('loggedIn');
+    };
+    
+    IGSConnection.prototype._onGameInfoStart = function() {
+        this.IGSStatus.LiveGames = {};
+    };
+    
+    IGSConnection.prototype._onLiveGameEntry = function(game) {
+        this.IGSStatus.LiveGames[game.id] = game;
+    };
+    
+    IGSConnection.prototype._onGameMoveHeader = function(moveHeader) { };
+    
+    IGSConnection.prototype._onGameMove = function(move) {
+        console.log('Move', move);
+        
+        var game = this.IGSStatus.ObservingGames[move.header.gameId];
+        
+        if (typeof(game) === 'undefined') {
+            game = this.IGSStatus.ObservingGames[move.header.gameId] = new IGSGame;
+        }
+        
+        game.addMove(move);
+        
+        this.emit('gameMove', move);
+    };
+    
+    IGSConnection.prototype._onGameEnd = function(gameEnd) {
+        
+        var finishedGame = this.IGSStatus.ObservingGames[gameEnd.gameId];
+        
+        finishedGame.setResult(gameEnd.result);
+        
+        this.IGSStatus.FinishedGames.push(finishedGame);
+        delete this.IGSStatus.ObservingGames[gameEnd.gameId];
+        
+        console.log('Game ended.', finishedGame);
+        this.emit('gameEnd', finishedGame);
+    };
+    
 exports = module.exports = IGSConnection;

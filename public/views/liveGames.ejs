@@ -1,0 +1,24 @@
+<table>
+    <thead>
+        <tr>
+            <th>White Name</th>
+            <th>White Rank</th>
+            <th>Black Name</th>
+            <th>Black Rank</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+	<% for(var i = 0; i < this.length; i++) { %>
+	    <% if (this[i] !== null) { %>
+	        <tr <%= this[i] %>>
+	            <td><%= this[i].whiteName %></td>
+	            <td><%= this[i].whiteRank %></td>
+	            <td><%= this[i].blackName %></td>
+	            <td><%= this[i].blackRank %></td>
+	            <td><a href="javascript:;" class="observe">Observe</a>
+	        </tr>
+	    <% } %>
+	<% } %>
+    </tbody>
+</table>
