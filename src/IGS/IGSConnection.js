@@ -16,6 +16,8 @@ var IGSConnection = function IGSConnection() {
     
     var self = this;
     
+    this.refreshGameListTimer = null;
+    
     // IGS Storage object
     this.IGSStatus = {
         LiveGames: {},
@@ -54,22 +56,54 @@ var IGSConnection = function IGSConnection() {
 };
 sys.inherits(IGSConnection, events.EventEmitter);
 
+/**
+ * Send a command to IGS
+ * 
+ * @param {String} command
+ */
 IGSConnection.prototype.sendCommand = function(command) {
     this.socket.write(command + '\n');
 };
 
+/**
+ * Connect to IGS Server
+ * 
+ * @param {String} host
+ * @param {Number} port
+ */
 IGSConnection.prototype.connect = function(host, port) {
     this.socket.connect(port, host);
 };
 
 IGSConnection.prototype.observeGame = function(gameId) {
-    this.sendCommand('status ' + gameId);
-    this.sendCommand('moves ' + gameId);
-    this.sendCommand('observe ' + gameId);
+	if (typeof(this.IGSStatus.ObservingGames[gameId]) === 'undefined') {
+		
+		this.IGSStatus.ObservingGames[gameId] = new IGSGame;
+		
+	    this.sendCommand('status ' + gameId);
+	    this.sendCommand('moves ' + gameId);
+	    this.sendCommand('observe ' + gameId);
+	} else {
+		console.log('Already observing ', gameId);
+	}
 };
 
-IGSConnection.prototype.refreshLiveGames = function() {
-	this.sendCommand('game');
+/**
+ * Refresh IGS live games
+ * 
+ * @param {Number} interval
+ */
+IGSConnection.prototype.refreshLiveGames = function(interval) {
+	var self = this;
+	
+	clearInterval(this.refreshGameListTimer);
+    this.sendCommand('game');
+    
+	if (interval > 0) {
+		this.refreshGameListTimer = setInterval(function() {
+			self.sendCommand('game');
+        }, interval);
+	}
 }
 
 /* Socket events */
@@ -103,6 +137,9 @@ IGSConnection.prototype.refreshLiveGames = function() {
         //toggle seek true
         //toggle open off
         
+        // Refresh games every ms interval
+        this.refreshLiveGames(30000);    
+	
         this.emit('loggedIn');
     };
     
@@ -117,8 +154,6 @@ IGSConnection.prototype.refreshLiveGames = function() {
     IGSConnection.prototype._onGameMoveHeader = function(moveHeader) { };
     
     IGSConnection.prototype._onGameMove = function(move) {
-        console.log('Move', move);
-        
         var game = this.IGSStatus.ObservingGames[move.header.gameId];
         
         if (typeof(game) === 'undefined') {

@@ -11,20 +11,7 @@ igsConnection
         console.log('Connected');
     })
     .on('loggedIn', function() {
-    	igsConnection.refreshLiveGames();
     	
-        /*setTimeout(function() {
-            var gameId = igsConnection.LiveGames[7].id;
-            igsConnection.observeGame(gameId);
-        }, 5000);*/
-        
-        var refreshGameList = function() {
-            setTimeout(function() {
-            	igsConnection.refreshLiveGames();
-            	refreshGameList();
-            }, 30000);
-        };
-        refreshGameList();
     })
     .on('disconnected', function() {
         console.log('Disconnected from server');
