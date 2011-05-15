@@ -5,7 +5,7 @@ var express = require('express'),
     expressServer = express.createServer(),
     igsConnection = new igs.IGSConnection,
     ClientManager = require('./ClientManager'),
-    port = process.ENV.hostname == 'eridanus.uberspace.de' ? 8124 : 8080;
+    port = process.ENV.hostname == 'eridanus.uberspace.de' ? 6815 : 8080;
 
 igsConnection
     .on('connected', function() {
