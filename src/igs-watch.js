@@ -4,7 +4,8 @@ var express = require('express'),
     igs        = require('./IGS/IGS'),
     expressServer = express.createServer(),
     igsConnection = new igs.IGSConnection,
-    ClientManager = require('./ClientManager');
+    ClientManager = require('./ClientManager'),
+    port = process.ENV.hostname == 'eridanus.uberspace.de' ? 8124 : 8080;
 
 igsConnection
     .on('connected', function() {
@@ -29,7 +30,7 @@ expressServer.get('/', function(req, res) {
     res.render('index.ejs');
 });
 
-expressServer.listen(8080);
+expressServer.listen(port);
 
 var socketIo = sio.listen(expressServer);
 var clientMgr = new ClientManager(igsConnection, socketIo);
